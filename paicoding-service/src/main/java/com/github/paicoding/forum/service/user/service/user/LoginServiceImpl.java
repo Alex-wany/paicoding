@@ -101,7 +101,9 @@ public class LoginServiceImpl implements LoginService {
      * @return
      */
     public String loginByUserPwd(String username, String password) {
+
         UserDO user = userDao.getUserByUserName(username);
+
         if (user == null) {
             throw ExceptionUtil.of(StatusEnum.USER_NOT_EXISTS, "userName=" + username);
         }
@@ -132,6 +134,7 @@ public class LoginServiceImpl implements LoginService {
         registerPreCheck(loginReq);
 
         // 2. 判断当前用户是否登录，若已经登录，则直接走绑定流程
+        // 处理一种特殊情况，即用户已经通过其他方式（例如微信）登录了系统，但是还没有设置用户名和密码
         Long userId = ReqInfoContext.getReqInfo().getUserId();
         loginReq.setUserId(userId);
         if (userId != null) {
@@ -144,8 +147,9 @@ public class LoginServiceImpl implements LoginService {
         // 3. 尝试使用用户名进行登录，若成功，则依然走绑定流程
         UserDO user = userDao.getUserByUserName(loginReq.getUsername());
         if (user != null) {
+            //  用户名已经存在，尝试进行密码校验
             if (!userPwdEncoder.match(loginReq.getPassword(), user.getPassword())) {
-                // 3.1 用户名已经存在
+                // 3.1 用户名已经存在 但是密码不对
                 throw ExceptionUtil.of(StatusEnum.USER_LOGIN_NAME_REPEAT, loginReq.getUsername());
             }
 
