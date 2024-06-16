@@ -51,8 +51,14 @@ public class LoginRestController {
     }
 
     /**
-     * 绑定星球账号
-     */
+     * 用户名和密码注册
+     *
+     * @param loginReq
+     * @param response
+     * @return com.github.paicoding.forum.api.model.vo.ResVo<java.lang.Boolean>
+     * @author Alex
+     * @create 2024/6/15
+     **/
     @PostMapping("/login/register")
     public ResVo<Boolean> register(UserPwdLoginReq loginReq,
                                    HttpServletResponse response) {

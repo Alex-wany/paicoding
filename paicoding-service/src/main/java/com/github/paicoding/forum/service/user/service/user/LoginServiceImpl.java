@@ -116,8 +116,9 @@ public class LoginServiceImpl implements LoginService {
         // 1. 为了兼容历史数据，对于首次登录成功的用户，初始化ai信息
         userAiService.initOrUpdateAiInfo(new UserPwdLoginReq().setUserId(userId).setUsername(username).setPassword(password));
 
-        // 登录成功，返回对应的session
+        // 2. 将当前用户id设置到请求上下文中
         ReqInfoContext.getReqInfo().setUserId(userId);
+        // 3. 生成session
         return userSessionHelper.genSession(userId);
     }
 
@@ -153,16 +154,18 @@ public class LoginServiceImpl implements LoginService {
                 throw ExceptionUtil.of(StatusEnum.USER_LOGIN_NAME_REPEAT, loginReq.getUsername());
             }
 
-            // 3.2 用户存在，尝试走绑定流程
+            // 3.2 用户存在，且密码正确，走绑定流程
+            // 重新设置userId为当前用户id 原来的userId为null
             userId = user.getId();
             loginReq.setUserId(userId);
+            // 为了兼容历史数据，对于首次登录成功的用户，初始化ai信息
             userAiService.initOrUpdateAiInfo(loginReq);
         } else {
-            //4. 走用户注册流程
+            //4. 用户名不存在，进行注册
             userId = registerService.registerByUserNameAndPassword(loginReq);
         }
-        ReqInfoContext.getReqInfo().setUserId(userId);
-        return userSessionHelper.genSession(userId);
+        ReqInfoContext.getReqInfo().setUserId(userId);// 设置当前用户id为登录用户id
+        return userSessionHelper.genSession(userId);// 返回session
     }
 
 

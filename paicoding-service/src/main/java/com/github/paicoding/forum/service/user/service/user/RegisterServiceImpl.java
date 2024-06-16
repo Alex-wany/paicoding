@@ -38,7 +38,7 @@ public class RegisterServiceImpl implements RegisterService {
     private UserAiDao userAiDao;
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class) // 事务回滚 用于保证数据的一致性
     public Long registerByUserNameAndPassword(UserPwdLoginReq loginReq) {
         // 1. 判断用户名是否准确
         UserDO user = userDao.getUserByUserName(loginReq.getUsername());
@@ -49,13 +49,13 @@ public class RegisterServiceImpl implements RegisterService {
         // 2. 保存用户登录信息
         user = new UserDO();
         user.setUserName(loginReq.getUsername());
-        user.setPassword(userPwdEncoder.encPwd(loginReq.getPassword()));
-        user.setThirdAccountId("");
+        user.setPassword(userPwdEncoder.encPwd(loginReq.getPassword()));// 密码加密
+        user.setThirdAccountId("");// 第三方账号为空
         // 用户名密码注册
-        user.setLoginType(LoginTypeEnum.USER_PWD.getType());
-        userDao.saveUser(user);
+        user.setLoginType(LoginTypeEnum.USER_PWD.getType());// 设置登录类型为用户名密码 其实是1
+        userDao.saveUser(user);// 保存用户信息
 
-        // 3. 保存用户信息
+        // 3. 保存用户信息 用于用户信息展示
         UserInfoDO userInfo = new UserInfoDO();
         userInfo.setUserId(user.getId());
         userInfo.setUserName(loginReq.getUsername());
@@ -65,6 +65,7 @@ public class RegisterServiceImpl implements RegisterService {
         // 4. 保存ai相互信息
         UserAiDO userAiDO = UserAiConverter.initAi(user.getId(), loginReq.getStarNumber());
         userAiDao.saveOrUpdateAiBindInfo(userAiDO, loginReq.getInvitationCode());
+        // 5. 注册成功后的处理 事件发布
         processAfterUserRegister(user.getId());
         return user.getId();
     }

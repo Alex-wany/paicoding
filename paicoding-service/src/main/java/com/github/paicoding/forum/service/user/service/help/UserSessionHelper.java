@@ -27,9 +27,14 @@ import java.util.Objects;
 @Slf4j
 @Component
 public class UserSessionHelper {
+    /**
+     *
+     * 自定义的jwt配置 读取配置文件中的jwt配置
+     *
+     **/
     @Component
     @Data
-    @ConfigurationProperties("paicoding.jwt")
+    @ConfigurationProperties("paicoding.jwt") // 读取配置文件中的jwt配置
     public static class JwtProperties {
         /**
          * 签发人
@@ -45,17 +50,20 @@ public class UserSessionHelper {
         private Long expire;
     }
 
+
     private final JwtProperties jwtProperties;
 
     private Algorithm algorithm;
     private JWTVerifier verifier;
 
+    // 通过构造方法注入jwt配置
     public UserSessionHelper(JwtProperties jwtProperties) {
         this.jwtProperties = jwtProperties;
         algorithm = Algorithm.HMAC256(jwtProperties.getSecret());
         verifier = JWT.require(algorithm).withIssuer(jwtProperties.getIssuer()).build();
     }
 
+    // 使用jwt生成token
     public String genSession(Long userId) {
         // 1.生成jwt格式的会话，内部持有有效期，用户信息
         String session = JsonUtil.toStr(MapUtils.create("s", SelfTraceIdGenerator.generate(), "u", userId));
@@ -69,25 +77,28 @@ public class UserSessionHelper {
         return token;
     }
 
+    // 在登出时，删除redis中的token信息
     public void removeSession(String session) {
         RedisClient.del(session);
     }
 
+
     /**
-     * 根据会话获取用户信息
+     * 通过jwt token获取userId
      *
-     * @param session
-     * @return
+     * @param session jwt token
+     * @return userId
      */
     public Long getUserIdBySession(String session) {
         // jwt的校验方式，如果token非法或者过期，则直接验签失败
         try {
+            // 验证jwt token
             DecodedJWT decodedJWT = verifier.verify(session);
             String pay = new String(Base64Utils.decodeFromString(decodedJWT.getPayload()));
             // jwt验证通过，获取对应的userId
             String userId = String.valueOf(JsonUtil.toObj(pay, HashMap.class).get("u"));
 
-            // 从redis中获取userId，解决用户登出，后台失效jwt token的问题
+            // 从redis中获取userId 用于双重校验 保证token的有效性 用于实现登出
             String user = RedisClient.getStr(session);
             if (user == null || !Objects.equals(userId, user)) {
                 return null;
