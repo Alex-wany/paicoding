@@ -153,6 +153,7 @@ public class IndexRecommendHelper {
     }
 
 
+    // 用于返回用户信息
     private UserStatisticInfoDTO loginInfo() {
         if (ReqInfoContext.getReqInfo() != null && ReqInfoContext.getReqInfo().getUserId() != null) {
             return userService.queryUserInfoWithStatistic(ReqInfoContext.getReqInfo().getUserId());

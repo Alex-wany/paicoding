@@ -68,15 +68,19 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
         // 1. 计算活跃度(正为加活跃,负为减活跃)
         String field;
         int score = 0;
+        // 访问页面
         if (activityScore.getPath() != null) {
             field = "path_" + activityScore.getPath();
             score = 1;
         } else if (activityScore.getArticleId() != null) {
+            // 文章相关
             field = activityScore.getArticleId() + "_";
             if (activityScore.getPraise() != null) {
+                // 点赞
                 field += "praise";
                 score = BooleanUtils.isTrue(activityScore.getPraise()) ? 2 : -2;
             } else if (activityScore.getCollect() != null) {
+                // 收藏
                 field += "collect";
                 score = BooleanUtils.isTrue(activityScore.getCollect()) ? 2 : -2;
             } else if (activityScore.getRate() != null) {

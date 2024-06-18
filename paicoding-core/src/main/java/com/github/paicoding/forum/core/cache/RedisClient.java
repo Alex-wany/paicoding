@@ -328,6 +328,7 @@ public class RedisClient {
         });
     }
 
+    // 获取排名信息
     public static ImmutablePair<Integer, Double> zRankInfo(String key, String value) {
         double score = zScore(key, value);
         int rank = zRank(key, value);
@@ -350,6 +351,7 @@ public class RedisClient {
         });
     }
 
+    // 获取排名
     public static Integer zRank(String key, String value) {
         return template.execute(new RedisCallback<Integer>() {
             @Override
@@ -362,8 +364,8 @@ public class RedisClient {
     /**
      * 找出排名靠前的n个
      *
-     * @param key
-     * @param n
+     * @param key key
+     * @param n  n
      * @return
      */
     public static List<ImmutablePair<String, Double>> zTopNScore(String key, int n) {

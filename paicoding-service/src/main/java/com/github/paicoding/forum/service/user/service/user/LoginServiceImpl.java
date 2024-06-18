@@ -67,7 +67,7 @@ public class LoginServiceImpl implements LoginService {
     /**
      * 没有注册时，先注册一个用户；若已经有，则登录
      *
-     * @param req
+     * @param req 请求
      */
     private Long registerOrGetUserInfo(UserSaveReq req) {
         UserDO user = userDao.getByThirdAccountId(req.getThirdAccountId());
@@ -86,7 +86,7 @@ public class LoginServiceImpl implements LoginService {
      * 给微信公众号的用户生成一个用于登录的会话
      *
      * @param userId 用户id
-     * @return
+     * @return 会话
      */
     @Override
     public String loginByWx(Long userId) {
@@ -98,8 +98,9 @@ public class LoginServiceImpl implements LoginService {
      *
      * @param username 用户名
      * @param password 密码
-     * @return
+     * @return 会话
      */
+    @Override
     public String loginByUserPwd(String username, String password) {
 
         UserDO user = userDao.getUserByUserName(username);
@@ -127,7 +128,7 @@ public class LoginServiceImpl implements LoginService {
      * 用户名密码方式登录，若用户不存在，则进行注册
      *
      * @param loginReq 登录信息
-     * @return
+     * @return 会话
      */
     @Override
     public String registerByUserPwd(UserPwdLoginReq loginReq) {
@@ -164,15 +165,17 @@ public class LoginServiceImpl implements LoginService {
             //4. 用户名不存在，进行注册
             userId = registerService.registerByUserNameAndPassword(loginReq);
         }
-        ReqInfoContext.getReqInfo().setUserId(userId);// 设置当前用户id为登录用户id
-        return userSessionHelper.genSession(userId);// 返回session
+        // 设置当前用户id为登录用户id
+        ReqInfoContext.getReqInfo().setUserId(userId);
+        // 返回session
+        return userSessionHelper.genSession(userId);
     }
 
 
     /**
      * 注册前置校验
      *
-     * @param loginReq
+     * @param loginReq 登录信息
      */
     private void registerPreCheck(UserPwdLoginReq loginReq) {
         // 1. 用户名密码不能为空
