@@ -62,12 +62,14 @@ public class LoginRestController {
     @PostMapping("/login/register")
     public ResVo<Boolean> register(UserPwdLoginReq loginReq,
                                    HttpServletResponse response) {
+        // 注册
         String session = loginService.registerByUserPwd(loginReq);
+        // 注册成功 生成session 并写入cookie 返回 true
         if (StringUtils.isNotBlank(session)) {
             // cookie中写入用户登录信息，用于身份识别
             response.addCookie(SessionUtil.newCookie(LoginService.SESSION_KEY, session));
             return ResVo.ok(true);
-        } else {
+        } else {// 注册失败 返回 false
             return ResVo.fail(StatusEnum.LOGIN_FAILED_MIXED, "用户名和密码登录异常，请稍后重试");
         }
     }

@@ -28,25 +28,32 @@ public class UserDao extends ServiceImpl<UserInfoMapper, UserInfoDO> {
     @Resource
     private UserMapper userMapper;
 
+    /**
+     * 获取指定用户ID之后的用户ID列表
+     *
+     * @param userId 用户ID
+     * @param size 获取的用户数量
+     * @return 用户ID列表
+     */
     public List<Long> scanUserId(Long userId, Integer size) {
         return userMapper.getUserIdsOrderByIdAsc(userId, size == null ? PageParam.DEFAULT_PAGE_SIZE : size);
     }
 
     /**
-     * 三方账号登录方式
+     * 通过第三方账号ID获取用户
      *
-     * @param accountId
-     * @return
+     * @param accountId 第三方账号ID
+     * @return 用户
      */
     public UserDO getByThirdAccountId(String accountId) {
         return userMapper.getByThirdAccountId(accountId);
     }
 
     /**
-     * 根据用户名来查询
+     * 通过用户名模糊查询用户
      *
-     * @param userName
-     * @return
+     * @param userName 用户名
+     * @return 用户列表
      */
     public List<UserInfoDO> getByUserNameLike(String userName) {
         LambdaQueryWrapper<UserInfoDO> query = Wrappers.lambdaQuery();
@@ -58,6 +65,11 @@ public class UserDao extends ServiceImpl<UserInfoMapper, UserInfoDO> {
         return baseMapper.selectList(query);
     }
 
+    /**
+     * 保存用户，如果用户ID为空则插入，否则更新
+     *
+     * @param user 用户
+     */
     public void saveUser(UserDO user) {
         if (user.getId() == null) {
             userMapper.insert(user);
@@ -66,6 +78,12 @@ public class UserDao extends ServiceImpl<UserInfoMapper, UserInfoDO> {
         }
     }
 
+    /**
+     * 通过用户ID获取用户信息
+     *
+     * @param userId 用户ID
+     * @return 用户信息
+     */
     public UserInfoDO getByUserId(Long userId) {
         LambdaQueryWrapper<UserInfoDO> query = Wrappers.lambdaQuery();
         query.eq(UserInfoDO::getUserId, userId)
@@ -73,6 +91,12 @@ public class UserDao extends ServiceImpl<UserInfoMapper, UserInfoDO> {
         return baseMapper.selectOne(query);
     }
 
+    /**
+     * 通过用户ID列表获取用户信息列表
+     *
+     * @param userIds 用户ID列表
+     * @return 用户信息列表
+     */
     public List<UserInfoDO> getByUserIds(Collection<Long> userIds) {
         LambdaQueryWrapper<UserInfoDO> query = Wrappers.lambdaQuery();
         query.in(UserInfoDO::getUserId, userIds)
@@ -80,12 +104,22 @@ public class UserDao extends ServiceImpl<UserInfoMapper, UserInfoDO> {
         return baseMapper.selectList(query);
     }
 
+    /**
+     * 获取用户数量
+     *
+     * @return 用户数量
+     */
     public Long getUserCount() {
         return lambdaQuery()
                 .eq(UserInfoDO::getDeleted, YesOrNoEnum.NO.getCode())
                 .count();
     }
 
+    /**
+     * 更新用户信息，如果用户信息没有变化则不更新
+     *
+     * @param user 用户信息
+     */
     public void updateUserInfo(UserInfoDO user) {
         UserInfoDO record = getByUserId(user.getUserId());
         if (record.equals(user)) {
@@ -101,6 +135,12 @@ public class UserDao extends ServiceImpl<UserInfoMapper, UserInfoDO> {
         updateById(user);
     }
 
+    /**
+     * 通过用户名获取用户
+     *
+     * @param userName 用户名
+     * @return 用户
+     */
     public UserDO getUserByUserName(String userName) {
         LambdaQueryWrapper<UserDO> queryUser = Wrappers.lambdaQuery();
         queryUser.eq(UserDO::getUserName, userName)
@@ -109,10 +149,21 @@ public class UserDao extends ServiceImpl<UserInfoMapper, UserInfoDO> {
         return userMapper.selectOne(queryUser);
     }
 
+    /**
+     * 通过用户ID获取用户
+     *
+     * @param userId 用户ID
+     * @return 用户
+     */
     public UserDO getUserByUserId(Long userId) {
         return userMapper.selectById(userId);
     }
 
+    /**
+     * 更新用户
+     *
+     * @param userDO 用户
+     */
     public void updateUser(UserDO userDO) {
         userMapper.updateById(userDO);
     }

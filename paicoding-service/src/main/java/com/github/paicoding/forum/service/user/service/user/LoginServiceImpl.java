@@ -131,7 +131,7 @@ public class LoginServiceImpl implements LoginService {
      */
     @Override
     public String registerByUserPwd(UserPwdLoginReq loginReq) {
-        // 1. 前置校验
+        // 1. 前置校验 1.1 用户名密码不能为空 1.2 星球编号校验 1.3 邀请码校验
         registerPreCheck(loginReq);
 
         // 2. 判断当前用户是否登录，若已经登录，则直接走绑定流程
@@ -156,10 +156,10 @@ public class LoginServiceImpl implements LoginService {
 
             // 3.2 用户存在，且密码正确，走绑定流程
             // 重新设置userId为当前用户id 原来的userId为null
-            userId = user.getId();
+            userId = user.getId(); // 重新设置userId为当前用户id
             loginReq.setUserId(userId);
             // 为了兼容历史数据，对于首次登录成功的用户，初始化ai信息
-            userAiService.initOrUpdateAiInfo(loginReq);
+            userAiService.initOrUpdateAiInfo(loginReq); // 更新用户ai信息等
         } else {
             //4. 用户名不存在，进行注册
             userId = registerService.registerByUserNameAndPassword(loginReq);
@@ -175,12 +175,13 @@ public class LoginServiceImpl implements LoginService {
      * @param loginReq
      */
     private void registerPreCheck(UserPwdLoginReq loginReq) {
+        // 1. 用户名密码不能为空
         if (StringUtils.isBlank(loginReq.getUsername()) || StringUtils.isBlank(loginReq.getPassword())) {
             throw ExceptionUtil.of(StatusEnum.USER_PWD_ERROR);
         }
 
         String starNumber = loginReq.getStarNumber();
-        // 若传了星球信息，首先进行校验
+        // 1.2 星球编号校验 若传了星球信息，首先进行校验
         if (StringUtils.isNotBlank(starNumber)) {
             if (Boolean.FALSE.equals(starNumberHelper.checkStarNumber(starNumber))) {
                 // 星球编号校验不通过，直接抛异常
