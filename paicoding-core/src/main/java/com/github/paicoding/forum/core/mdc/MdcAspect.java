@@ -28,16 +28,19 @@ import java.lang.reflect.Method;
 @Aspect
 @Component
 public class MdcAspect implements ApplicationContextAware {
+
     private ExpressionParser parser = new SpelExpressionParser();
     private ParameterNameDiscoverer parameterNameDiscoverer = new DefaultParameterNameDiscoverer();
 
     @Pointcut("@annotation(MdcDot) || @within(MdcDot)")
-    public void getLogAnnotation() {
+    public void mdcDotPointcut() {
     }
 
-    @Around("getLogAnnotation()")
+    @Around("mdcDotPointcut()")
     public Object handle(ProceedingJoinPoint joinPoint) throws Throwable {
+        // 记录执行时间
         long start = System.currentTimeMillis();
+        // 添加MDC 用于日志追踪
         boolean hasTag = addMdcCode(joinPoint);
         try {
             Object ans = joinPoint.proceed();
@@ -53,11 +56,16 @@ public class MdcAspect implements ApplicationContextAware {
         }
     }
 
+    // 添加MDC 用于日志追踪 业务码 用于区分不同业务
     private boolean addMdcCode(ProceedingJoinPoint joinPoint) {
+        // 获取方法签名 用于获取方法上的注解
         MethodSignature signature = (MethodSignature) joinPoint.getSignature();
+        // 获取方法对象 用于获取方法上的注解
         Method method = signature.getMethod();
+        // 获取方法上的注解
         MdcDot dot = method.getAnnotation(MdcDot.class);
         if (dot == null) {
+            // 如果方法上没有注解 则获取类上的注解
             dot = (MdcDot) joinPoint.getSignature().getDeclaringType().getAnnotation(MdcDot.class);
         }
 
@@ -68,6 +76,7 @@ public class MdcAspect implements ApplicationContextAware {
         return false;
     }
 
+    // 解析SpEL表达式 获取业务码
     private String loadBizCode(String key, ProceedingJoinPoint joinPoint) {
         if (StringUtils.isBlank(key)) {
             return "";

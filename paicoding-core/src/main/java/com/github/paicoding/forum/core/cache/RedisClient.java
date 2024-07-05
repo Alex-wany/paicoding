@@ -338,9 +338,9 @@ public class RedisClient {
     /**
      * 获取分数
      *
-     * @param key
-     * @param value
-     * @return
+     * @param key  key
+     * @param value value
+     * @return 分数
      */
     public static Double zScore(String key, String value) {
         return template.execute(new RedisCallback<Double>() {

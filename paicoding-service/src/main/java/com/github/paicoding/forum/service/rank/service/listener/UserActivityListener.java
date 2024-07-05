@@ -29,7 +29,7 @@ public class UserActivityListener {
     /**
      * 用户操作行为，增加对应的积分
      *
-     * @param msgEvent
+     * @param msgEvent 消息事件
      */
     @EventListener(classes = NotifyMsgEvent.class)
     @Async

@@ -56,8 +56,8 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
     /**
      * 添加活跃分
      *
-     * @param userId
-     * @param activityScore
+     * @param userId      用户id
+     * @param activityScore 活跃度信息
      */
     @Override
     public void addActivityScore(Long userId, ActivityScoreBo activityScore) {
@@ -103,6 +103,7 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
         final String monthRankKey = monthRankKey();
         // 2. 幂等：判断之前是否有更新过相关的活跃度信息
         final String userActionKey = ACTIVITY_SCORE_KEY + userId + DateUtil.format(DateTimeFormatter.ofPattern("yyyyMMdd"), System.currentTimeMillis());
+        // 查询用户之前的活跃度 --> 用于判断是否已经加过分
         Integer ans = RedisClient.hGet(userActionKey, field, Integer.class);
         if (ans == null) {
             // 2.1 之前没有加分记录，执行具体的加分
@@ -122,7 +123,12 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
                     // 由于上面只实现了日/月活跃度的增加，但是没有设置对应的有效期；为了避免持久保存导致redis占用较高；因此这里设定了缓存的有效期
                     // 日活跃榜单，保存31天；月活跃榜单，保存1年
                     // 为什么是 newAns <= score 才设置有效期呢？
-                    // 因为 newAns 是用户当天的活跃度，如果发现和需要增加的活跃度 scopre 相等，则表明是今天的首次添加记录，此时设置有效期就比较符合预期了
+                    // 因为 newAns 是用户当天的活跃度，如果发现和需要增加的活跃度 score 相等，则表明是今天的首次添加记录，此时设置有效期就比较符合预期了
+                    // 如果 newAns > score，说明之前已经有过活跃度的增加，此时设置有效期，会导致有效期的重置，这样就不符合预期了
+                    // newAns < score 的情况可能存在吗
+                    // 1. 由于并发的原因，可能会出现，但是这种情况下，也不会导致有效期的重置，因为这种情况下，是不会设置有效期的
+                    // 如果 Redis 中的 todayRankKey 或 monthRankKey 对应的用户得分在执行 zIncrBy 方法之前被其他进程或线程减少了，那么 newAns 可能会小于 score。
+                    // 这种情况在并发环境下可能会发生，但是在单线程环境下不会发生。
                     // 但是请注意，下面的实现有两个缺陷：
                     //  1. 对于月的有效期，就变成了本月，每天的首次增加活跃度时，都会重新刷一下它的有效期，这样就和预期中的首次添加缓存时，设置有效期不符
                     //  2. 若先增加活跃度1，再减少活跃度1，然后再加活跃度1，同样会导致重新算了有效期
@@ -140,9 +146,10 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
         } else if (ans > 0) {
             // 2.2 之前已经加过分，因此这次减分可以执行
             if (score < 0) {
-                // 移除用户的活跃执行记录 --> 即移除用来做防重复添加活跃度的幂等键
+                // 用户的活跃度是减少的，所以需要移除之前的增加活跃度的记录 --> 保证幂等
                 Boolean oldHave = RedisClient.hDel(userActionKey, field);
                 if (BooleanUtils.isTrue(oldHave)) {
+                    // 更新当天和当月的活跃度排行榜
                     Double newAns = RedisClient.zIncrBy(todayRankKey, String.valueOf(userId), score);
                     RedisClient.zIncrBy(monthRankKey, String.valueOf(userId), score);
                     if (log.isDebugEnabled()) {
@@ -165,10 +172,17 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
         return item;
     }
 
+    /**
+     * 查询活跃度排行榜
+     *
+     * @param time 时间
+     * @param size 排行榜大小
+     * @return java.util.List<com.github.paicoding.forum.api.model.vo.rank.dto.RankItemDTO>
+     **/
     @Override
     public List<RankItemDTO> queryRankList(ActivityRankTimeEnum time, int size) {
         String rankKey = time == ActivityRankTimeEnum.DAY ? todayRankKey() : monthRankKey();
-        // 1. 获取topN的活跃用户
+        // 1. 获取topN的用户id和对应的活跃度
         List<ImmutablePair<String, Double>> rankList = RedisClient.zTopNScore(rankKey, size);
         if (CollectionUtils.isEmpty(rankList)) {
             return Collections.emptyList();
@@ -184,6 +198,15 @@ public class UserActivityRankServiceImpl implements UserActivityRankService {
                 .map(user -> new RankItemDTO().setUser(user).setScore(userScoreMap.getOrDefault(user.getUserId(), 0)))
                 .sorted((o1, o2) -> Integer.compare(o2.getScore(), o1.getScore()))
                 .collect(Collectors.toList());
+        /* 第三步解释：
+        * 使用 stream() 方法将用户列表转换为流，以便进行流处理。
+        * 使用 map 操作将流中的每个元素（SimpleUserInfoDTO 对象）转换为一个 RankItemDTO 对象。
+        *   在这个过程中，将用户的基本信息设置到 RankItemDTO 对象的 user 属性中，将用户的活跃度得分从 userScoreMap 中获取并设置到 RankItemDTO 对象的 score 属性中。
+        *   如果 userScoreMap 中没有用户的得分，那么就使用默认值 0。
+        * 使用 sorted 操作按照活跃度得分降序排序。在这个过程中，使用 Integer.compare(o2.getScore(), o1.getScore()) 方法比较两个 RankItemDTO 对象的得分。
+        *   由于 o2 和 o1 的位置颠倒了，所以这实际上是降序排序。
+        * 使用 collect 操作将流处理的结果收集到一个列表中。
+        */
 
         // 4. 补齐每个用户的排名
         IntStream.range(0, rank.size()).forEach(i -> rank.get(i).setRank(i + 1));
