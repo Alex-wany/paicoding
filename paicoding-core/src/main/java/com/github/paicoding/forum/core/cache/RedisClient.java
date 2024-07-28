@@ -240,7 +240,7 @@ public class RedisClient {
     }
 
     /**
-     * 判断value是否再set中
+     * 判断value是否存在set中
      *
      * @param key
      * @param value

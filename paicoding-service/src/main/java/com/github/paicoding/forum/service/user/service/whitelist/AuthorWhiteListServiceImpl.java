@@ -19,7 +19,7 @@ import java.util.Set;
 @Service
 public class AuthorWhiteListServiceImpl implements AuthorWhiteListService {
     /**
-     * 实用 redis - set 来存储允许直接发文章的白名单
+     * 使用 redis - set 来存储允许直接发文章的白名单
      */
     private static final String ARTICLE_WHITE_LIST = "auth_article_white_list";
 

@@ -37,17 +37,21 @@ public class WxLoginHelper {
 
     public WxLoginHelper(LoginService loginService) {
         this.sessionService = loginService;
+        // 创建验证码缓存实例，设置最大缓存条数为300，过期时间为5分钟
         verifyCodeCache = CacheBuilder.newBuilder().maximumSize(300).expireAfterWrite(5, TimeUnit.MINUTES).build(new CacheLoader<String, SseEmitter>() {
             @Override
             public SseEmitter load(String s) throws Exception {
+                // 如果缓存中没有对应的验证码，即缓存未命中，说明验证码已经过期，直接抛出异常
                 throw new NoVlaInGuavaException("no val: " + s);
             }
         });
 
+        // 创建设备码缓存实例，设置最大缓存条数为300，过期时间为5分钟
         deviceCodeCache = CacheBuilder.newBuilder().maximumSize(300).expireAfterWrite(5, TimeUnit.MINUTES).build(new CacheLoader<String, String>() {
             @Override
             public String load(String s) {
                 int cnt = 0;
+                // 生成随机设备码，直到找到一个不重复的为止
                 while (true) {
                     String code = CodeGenerateUtil.genCode(cnt++);
                     if (!verifyCodeCache.asMap().containsKey(code)) {

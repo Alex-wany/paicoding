@@ -106,6 +106,7 @@ public class ArticleWriteServiceImpl implements ArticleWriteService {
      */
     private Long insertArticle(ArticleDO article, String content, Set<Long> tags) {
         // article + article_detail + tag  三张表的数据变更
+        // 非白名单的用户，发布的文章需要先进行审核
         if (needToReview(article)) {
             // 非白名单中的作者发布文章需要进行审核
             article.setStatus(PushStatusEnum.REVIEW.getCode());
@@ -156,7 +157,7 @@ public class ArticleWriteServiceImpl implements ArticleWriteService {
         articleDao.updateArticleContent(article.getId(), content, review);
 
         // 标签更新
-        if (tags != null && tags.size() > 0) {
+        if (tags != null && !tags.isEmpty()) {
             articleTagDao.updateTags(article.getId(), tags);
         }
 
@@ -207,6 +208,8 @@ public class ArticleWriteServiceImpl implements ArticleWriteService {
         if (user.getRole() != null && user.getRole().equalsIgnoreCase(UserRole.ADMIN.name())) {
             return false;
         }
+        //判断文章的状态是否为上线状态（ONLINE），并且用户是否不在白名单中。
+        //如果文章状态为上线且用户不在白名单中，则返回 true，表示文章需要审核。
         return article.getStatus() == PushStatusEnum.ONLINE.getCode() && !articleWhiteListService.authorInArticleWhiteList(article.getUserId());
     }
 }

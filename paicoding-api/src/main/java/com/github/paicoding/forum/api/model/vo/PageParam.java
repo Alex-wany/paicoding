@@ -49,6 +49,7 @@ public class PageParam {
         return pageParam;
     }
 
+    // 获取分页sql
     public static String getLimitSql(PageParam pageParam) {
         return String.format("limit %s,%s", pageParam.offset, pageParam.limit);
     }

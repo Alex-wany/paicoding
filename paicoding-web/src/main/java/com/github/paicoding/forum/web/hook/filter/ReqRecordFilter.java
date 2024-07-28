@@ -78,7 +78,7 @@ public class ReqRecordFilter implements Filter {
             filterChain.doFilter(request, servletResponse);
         } finally {
             if (stopWatch.isRunning()) {
-                // 避免doFitler执行异常，导致上面的 stopWatch无法结束，这里先首当结束一下上次的计数
+                // 避免doFiler执行异常，导致上面的 stopWatch无法结束，这里先首当结束一下上次的计数
                 stopWatch.stop();
             }
             stopWatch.start("输出请求日志");

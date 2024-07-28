@@ -36,36 +36,43 @@ public class UserStatisticEventListener {
     @Async
     public void notifyMsgListener(NotifyMsgEvent msgEvent) {
         switch (msgEvent.getNotifyType()) {
+            // 评论、回复
             case COMMENT:
             case REPLY:
                 CommentDO comment = (CommentDO) msgEvent.getContent();
                 RedisClient.hIncr(CountConstants.ARTICLE_STATISTIC_INFO + comment.getArticleId(), CountConstants.COMMENT_COUNT, 1);
                 break;
+            // 删除评论、回复
             case DELETE_COMMENT:
             case DELETE_REPLY:
                 comment = (CommentDO) msgEvent.getContent();
                 RedisClient.hIncr(CountConstants.ARTICLE_STATISTIC_INFO + comment.getArticleId(), CountConstants.COMMENT_COUNT, -1);
                 break;
+            // 收藏
             case COLLECT:
                 UserFootDO foot = (UserFootDO) msgEvent.getContent();
                 RedisClient.hIncr(CountConstants.USER_STATISTIC_INFO + foot.getDocumentUserId(), CountConstants.COLLECTION_COUNT, 1);
                 RedisClient.hIncr(CountConstants.ARTICLE_STATISTIC_INFO + foot.getDocumentId(), CountConstants.COLLECTION_COUNT, 1);
                 break;
+            // 取消收藏
             case CANCEL_COLLECT:
                 foot = (UserFootDO) msgEvent.getContent();
                 RedisClient.hIncr(CountConstants.USER_STATISTIC_INFO + foot.getDocumentUserId(), CountConstants.COLLECTION_COUNT, -1);
                 RedisClient.hIncr(CountConstants.ARTICLE_STATISTIC_INFO + foot.getDocumentId(), CountConstants.COLLECTION_COUNT, -1);
                 break;
+            // 点赞
             case PRAISE:
                 foot = (UserFootDO) msgEvent.getContent();
                 RedisClient.hIncr(CountConstants.USER_STATISTIC_INFO + foot.getDocumentUserId(), CountConstants.PRAISE_COUNT, 1);
                 RedisClient.hIncr(CountConstants.ARTICLE_STATISTIC_INFO + foot.getDocumentId(), CountConstants.PRAISE_COUNT, 1);
                 break;
+            // 取消点赞
             case CANCEL_PRAISE:
                 foot = (UserFootDO) msgEvent.getContent();
                 RedisClient.hIncr(CountConstants.USER_STATISTIC_INFO + foot.getDocumentUserId(), CountConstants.PRAISE_COUNT, -1);
                 RedisClient.hIncr(CountConstants.ARTICLE_STATISTIC_INFO + foot.getDocumentId(), CountConstants.PRAISE_COUNT, -1);
                 break;
+            // 关注、取消关注
             case FOLLOW:
                 UserRelationDO relation = (UserRelationDO) msgEvent.getContent();
                 // 主用户粉丝数 + 1

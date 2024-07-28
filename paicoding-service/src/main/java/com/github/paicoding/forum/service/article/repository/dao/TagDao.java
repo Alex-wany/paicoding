@@ -36,6 +36,8 @@ public class TagDao extends ServiceImpl<TagMapper, TagDO> {
                 .and(StringUtils.isNotBlank(key), v -> v.like(TagDO::getTagName, key))
                 .orderByDesc(TagDO::getId);
         if (pageParam != null) {
+            // 在生成的 SQL 语句末尾追加自定义的 SQL 片段。
+            // 在这里，它用于手动添加分页 SQL 片段 LIMIT offset, limit。
             query.last(PageParam.getLimitSql(pageParam));
         }
         List<TagDO> list = baseMapper.selectList(query);
@@ -56,6 +58,9 @@ public class TagDao extends ServiceImpl<TagMapper, TagDO> {
                 .intValue();
     }
 
+    // 抽离出公共的查询条件 LambdaQueryChainWrapper 用于需要传入参数动态构建查询条件的场景
+    // @param params
+    // @return LambdaQueryChainWrapper<TagDO>
     private LambdaQueryChainWrapper<TagDO> createTagQuery(SearchTagParams params) {
         return lambdaQuery()
                 .eq(TagDO::getDeleted, YesOrNoEnum.NO.getCode())
@@ -67,7 +72,7 @@ public class TagDao extends ServiceImpl<TagMapper, TagDO> {
     /**
      * 获取所有 Tags 列表（分页）
      *
-     * @return
+     * @return List<TagDO>
      */
     public List<TagDO> listTag(SearchTagParams params) {
         List<TagDO> list = createTagQuery(params)
@@ -98,7 +103,9 @@ public class TagDao extends ServiceImpl<TagMapper, TagDO> {
      * @return
      */
     public Long selectTagIdByTag(String tag) {
-        TagDO record = lambdaQuery().select(TagDO::getId)
+        TagDO record = lambdaQuery()
+                // 指定查询只返回 TagDO 实体的 id 字段
+                .select(TagDO::getId)
                 .eq(TagDO::getDeleted, YesOrNoEnum.NO.getCode())
                 .eq(TagDO::getTagName, tag)
                 .last("limit 1")
